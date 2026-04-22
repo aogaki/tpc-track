@@ -1,6 +1,6 @@
 # M6: Plotly で 3D ぐりぐり
 
-**status**: todo
+**status**: done
 
 ## ゴール
 
@@ -15,9 +15,16 @@ M5 が吐いた点群 CSV を読んで、1 イベントを Plotly の `scatter_3
 
 ## 実装方針 (KISS)
 
-- 新規 `python_comp/src/viewer3d.py` に `plot_event(df, event_id)` のような純粋関数を置く。
-- ノートブック `python_comp/viewer3d.ipynb` から呼ぶ。
-- pandas で CSV を読み、`df.query("event_id == N")` でフィルタ。
+- 新規 `python/viewer3d.py` に `load_points()` と `plot_event(df, event_id, max_points=20000)` を置く。
+- ノートブック `python/viewer3d.ipynb` から呼ぶ (ipywidgets のスライダ付き)。
+- pandas で CSV 読み、`df[df.event_id == N]` でフィルタ。
+- `max_points` を超える event は `nlargest(max_points, "charge")` で top-charge をサンプリング。
+
+## M6 実行結果 (2026-04-22)
+
+- 依存パッケージはプロジェクト venv (`.venv/`) で管理。`plotly 6.7 / pandas 3.0 / ipywidgets 8.1 / scikit-image / scipy / scikit-learn`。
+- `CoBo_2026-04-06_0001_points.csv` (13.6 M 点, 142 event) を pandas で読み込み、event 0 を 20k 点 (charge top) に downsample → `plotly.graph_objects.Scatter3d` で書き出し可能であることを確認。
+- 既定 color scale は `log10(charge)` with Viridis, marker size 2 px, `aspectmode="data"`。
 
 ## やらないこと
 

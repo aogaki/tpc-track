@@ -52,14 +52,14 @@ dataUVW (cleaned)
 
 下記の順で進める。各マイルストーンに対応するタスクファイルは `milestones/` に置く。
 
-1. **[M1](milestones/01_geometry_parser.md)**: geometry ファイル (`utils/new_geometry_mini_eTPC.dat`) の完全パーサを書き、`(plane, strip) → (u_mm, 方向ベクトル)` を返す関数を作る。ヘッダの `ANGLES / REFERENCE POINT / DRIFT VELOCITY / SAMPLING RATE / TRIGGER DELAY` も取得。
-2. **[M2](milestones/02_hit_extraction.md)**: `cleanUVW` 出力から閾値超えの `(plane, strip, time_bin, charge)` をヒット化する関数と、そのテスト。
-3. **[M3](milestones/03_uvw_to_xyz.md)**: 3 plane のヒットを時間 bin 毎にマッチングして `(x_mm, y_mm, z_mm, charge)` を作る。ゴーストヒット対策は最低限（後で拡張）。
-4. **[M4](milestones/04_reference_check.md)**: **ひと段落チェックポイント**。新パイプラインの UVW PNG を `howto.txt` の既存コマンド出力と**ピクセル一致で比較**し、加えて時間積分 XY PNG を視覚確認する。検証専用マクロ `verify_plot.cpp` を使う。本番パイプラインには影響させない。
-5. **[M5](milestones/05_single_arg_macro.md)**: 既存マクロを縮退させ、ファイル名 1 引数の `run(TString file)` だけ公開。norm/clean/zip は内部固定。出力は点群 CSV または TTree。
-6. **[M6](milestones/06_plotly_viewer.md)**: Python 側で点群を読み、Plotly で 1 イベント 3D 可視化。event スライダあり。
-7. **[M7](milestones/07_line_fit.md)**: `processXYZLines.fitNLinesv2` で直線フィットを重ね描き。
-8. **[M8](milestones/08_polish.md)**: UI (Streamlit or Dash)、端の 10/12 bin 0 埋めの config 化、`geometry_*_50MHz.dat` 切替などの枝葉。
+1. **[M1](milestones/01_geometry_parser.md)** ✅ done — geometry パーサ (header + strip metadata + 方向ベクトル)。6 test case。
+2. **[M2](milestones/02_hit_extraction.md)** ✅ done — StripSignal → Hit の閾値抽出。6 test case。
+3. **[M3](milestones/03_uvw_to_xyz.md)** ✅ done — UVW → (x, y, z, charge)。hitsToPoints は cartesian product + `max_charge_ratio` フィルタ。9 test case。
+4. **[M4](milestones/04_reference_check.md)** ✅ done — `verify_plot.cpp` が `runmacro_mini -norm0 -clean0` とピクセル一致で UVW PNG を出し、XY PNG は angle / reference point が正しいことを目視確認済み。
+5. **[M5](milestones/05_single_arg_macro.md)** ✅ done — `run_mini("path.root")` で全 event を点群 CSV に出力。ACLiC 経由でビルド速度 40% 改善。
+6. **[M6](milestones/06_plotly_viewer.md)** ✅ done — Plotly `scatter_3d` + event ナビゲーション + voxel-coincidence フィルタスライダ。
+7. **[M7](milestones/07_line_fit.md)** ✅ done — PCA + BFGS の iterative 3D line fit + Plotly 重ね描き。5 pytest case。
+8. **[M8](milestones/08_polish.md)** ⏸ deferred — 具体的要望が出たタイミングで再開。
 
 ## やらないこと (今は)
 

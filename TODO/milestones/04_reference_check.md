@@ -1,6 +1,6 @@
 # M4: リファレンス PNG との突き合わせ (ひと段落チェックポイント)
 
-**status**: todo
+**status**: done
 
 ## ゴール
 
@@ -37,9 +37,17 @@ M1〜M3 で作った新パイプラインの健全性を、**`tpcanalysis-main/h
 - **なし**。M5 (ファイル名 1 引数の本番マクロ) では `norm=true, clean=true` 固定を維持する。
 - `verify_plot.cpp` は検証専用で、CI や日常運用に組み込まない。
 
+## M4 実行結果 (2026-04-22)
+
+- 入力: `raw_run_files/CoBo_2026-04-06_0001.root`, event 0
+- **UVW PNG ピクセル比較**: 同じ ROOT (6.36.10) で `runmacro_mini -convert -norm0 -clean0` と `verify_plot` を走らせると **0 pixel diff** (完全一致)。既存の `raw_run_files/images_none/` にあった PNG は別 ROOT で生成されていて 10-15% 差 (max_delta=236) が出たが、同一 ROOT での再生成で解消。**パイプラインの健全性には無関係**と結論。
+- **XY PNG**: `hitsToPoints` (M3) は実データ多重ヒットでは 0 点になるので、XY は各ヒットのストリップ線を (x, y) にラスタライズする方式に変更。U (水平) / V (+60°) / W (-60°) の 3 ストリップ family が期待角度で現れ、REFERENCE_POINT (-53, -52) mm 付近にバンドが集中。**angle と reference point は正しい**。pitch の絶対値は目視判定できず、M5 点群化後に再評価。
+- **ACLiC 不使用**: ROOT 6.36 の ACLiC + GET ディクショナリでリンクが壊れる (`Class()` / `Streamer` / vtable が未解決)。cling インタプリタ (`root -q 'file.cpp(args)'`) で走らせる + `ROOT_INCLUDE_PATH=../include` を事前に export。
+
 ## やらないこと
 
-- ピクセル不一致の原因を完全に潰すこと (ROOT の描画実装に深入りしない)
+- ACLiC のリンクエラー解決 (cling で動くので不要)
+- ピクセル不一致を完全に 0 にすること (ROOT バージョン差を追い込む価値は薄い)
 - XY の自動比較 (reference がないため)
 - 複数ファイルのバッチ検証
-- 検証結果をテストスイートに組み込むこと (必要になれば別タスク)
+- 検証結果を CI テストに組み込むこと

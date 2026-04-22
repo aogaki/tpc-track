@@ -4,8 +4,14 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(MyLib)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# ROOT >= 6.32 requires C++17
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# ROOT >= 6.32 requires C++17. -O2 (not -O3) to avoid FP reordering that
+# shifts threshold-crossing bins in the downstream pipeline.
 add_definitions("-std=c++17 -march=native -mtune=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "" FORCE)
 
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})

@@ -9,6 +9,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# -O3 is known to cause surprising FP reordering / threshold drift on this
+# project. Force -O2 for Release to keep results reproducible.
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "" FORCE)
+
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 add_library(tpctrack_core

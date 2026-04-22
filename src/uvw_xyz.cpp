@@ -1,5 +1,6 @@
 #include "tpctrack/uvw_xyz.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <map>
@@ -59,7 +60,8 @@ double zFromTimeBin(const Geometry& geo, int time_bin) {
 }
 
 std::vector<Point3D> hitsToPoints(const Geometry& geo,
-                                  const std::vector<Hit>& hits) {
+                                  const std::vector<Hit>& hits,
+                                  double max_charge_ratio) {
     std::map<int, std::array<std::vector<const Hit*>, 3>> by_bin;
     for (const auto& h : hits) {
         if (h.plane < 0 || h.plane > 2) continue;
@@ -68,24 +70,33 @@ std::vector<Point3D> hitsToPoints(const Geometry& geo,
 
     std::vector<Point3D> pts;
     for (const auto& [bin, per_plane] : by_bin) {
-        if (per_plane[0].size() != 1 || per_plane[1].size() != 1 ||
-            per_plane[2].size() != 1) {
+        if (per_plane[0].empty() || per_plane[1].empty() ||
+            per_plane[2].empty()) {
             continue;
         }
-        const Hit& hu = *per_plane[0][0];
-        const Hit& hv = *per_plane[1][0];
-        const Hit& hw = *per_plane[2][0];
-
-        const double u = stripCoordMm(geo, Plane::U, hu.strip);
-        const double v = stripCoordMm(geo, Plane::V, hv.strip);
-        auto [x, y] = xyFromTwoCoords(geo, Plane::U, u, Plane::V, v);
-
-        Point3D p;
-        p.x_mm = x;
-        p.y_mm = y;
-        p.z_mm = zFromTimeBin(geo, bin);
-        p.charge = (hu.charge + hv.charge + hw.charge) / 3.0;
-        pts.push_back(p);
+        const double z = zFromTimeBin(geo, bin);
+        for (const Hit* hu : per_plane[0]) {
+            const double u = stripCoordMm(geo, Plane::U, hu->strip);
+            for (const Hit* hv : per_plane[1]) {
+                const double v = stripCoordMm(geo, Plane::V, hv->strip);
+                auto [x, y] = xyFromTwoCoords(geo, Plane::U, u, Plane::V, v);
+                for (const Hit* hw : per_plane[2]) {
+                    const double cu = hu->charge;
+                    const double cv = hv->charge;
+                    const double cw = hw->charge;
+                    const double cmin = std::min({cu, cv, cw});
+                    const double cmax = std::max({cu, cv, cw});
+                    if (cmin <= 0.0) continue;
+                    if (cmax / cmin > max_charge_ratio) continue;
+                    Point3D p;
+                    p.x_mm = x;
+                    p.y_mm = y;
+                    p.z_mm = z;
+                    p.charge = (cu + cv + cw) / 3.0;
+                    pts.push_back(p);
+                }
+            }
+        }
     }
     return pts;
 }

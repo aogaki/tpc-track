@@ -91,14 +91,51 @@ TEST_CASE("hitsToPoints skips time_bins missing any of the three planes") {
     CHECK(pts.empty());
 }
 
-TEST_CASE("hitsToPoints skips time_bins with duplicate hits on a plane") {
+TEST_CASE("hitsToPoints produces cartesian product for multi-hit time_bins") {
     auto geo = loadGeo();
+    // U has 2 hits, V has 1 hit, W has 1 hit at time_bin 300:
+    // expect 2 * 1 * 1 = 2 Point3D outputs.
     std::vector<tpctrack::Hit> hits{
         {0, 1, 300, 100.0},
-        {0, 2, 300, 110.0},  // duplicate U hit at same time_bin
+        {0, 2, 300, 110.0},  // second U hit at same time_bin
         {1, 1, 300, 120.0},
         {2, 1, 300, 110.0},
     };
     auto pts = tpctrack::hitsToPoints(geo, hits);
+    CHECK(pts.size() == 2);
+    // Different U strips → different x/y, same z.
+    CHECK(pts[0].z_mm == doctest::Approx(pts[1].z_mm));
+    // charge is the 3-plane mean of each combo.
+    CHECK(pts[0].charge == doctest::Approx((100.0 + 120.0 + 110.0) / 3.0));
+    CHECK(pts[1].charge == doctest::Approx((110.0 + 120.0 + 110.0) / 3.0));
+}
+
+TEST_CASE("hitsToPoints skips time_bins missing any plane entirely") {
+    // With cartesian product, at least one hit per plane is required.
+    auto geo = loadGeo();
+    std::vector<tpctrack::Hit> hits{
+        {0, 1, 300, 100.0},
+        {0, 2, 300, 110.0},
+        {1, 1, 300, 120.0},
+        // W missing
+    };
+    auto pts = tpctrack::hitsToPoints(geo, hits);
     CHECK(pts.empty());
+}
+
+TEST_CASE("hitsToPoints charge-ratio filter rejects inconsistent combinations") {
+    auto geo = loadGeo();
+    // 2 U hits at same bin: one consistent with V,W, one wildly off.
+    std::vector<tpctrack::Hit> hits{
+        {0, 1, 300, 100.0},   // U match
+        {0, 2, 300, 5.0},     // U ghost (20× smaller)
+        {1, 1, 300, 110.0},
+        {2, 1, 300, 120.0},
+    };
+    // Without filter: 2 combinations pass.
+    CHECK(tpctrack::hitsToPoints(geo, hits).size() == 2);
+    // With factor=2: only the consistent combination (100, 110, 120) passes.
+    auto pts = tpctrack::hitsToPoints(geo, hits, /*max_charge_ratio=*/2.0);
+    REQUIRE(pts.size() == 1);
+    CHECK(pts[0].charge == doctest::Approx((100.0 + 110.0 + 120.0) / 3.0));
 }

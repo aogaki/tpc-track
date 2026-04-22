@@ -1,6 +1,6 @@
 # M3: UVW → XYZ 変換
 
-**status**: todo
+**status**: done
 
 ## ゴール
 

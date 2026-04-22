@@ -14,6 +14,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 add_library(tpctrack_core
     src/geometry.cpp
     src/hit_extraction.cpp
+    src/uvw_xyz.cpp
 )
 target_include_directories(tpctrack_core PUBLIC include)
 
@@ -39,3 +40,9 @@ add_test(NAME test_geometry COMMAND test_geometry)
 add_executable(test_hit_extraction tests/test_hit_extraction.cpp)
 target_link_libraries(test_hit_extraction PRIVATE tpctrack_core doctest::doctest)
 add_test(NAME test_hit_extraction COMMAND test_hit_extraction)
+
+add_executable(test_uvw_xyz tests/test_uvw_xyz.cpp)
+target_link_libraries(test_uvw_xyz PRIVATE tpctrack_core doctest::doctest)
+target_compile_definitions(test_uvw_xyz PRIVATE
+    TPCTRACK_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tpcanalysis-main/utils")
+add_test(NAME test_uvw_xyz COMMAND test_uvw_xyz)

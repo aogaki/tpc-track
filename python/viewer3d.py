@@ -11,11 +11,13 @@ responsive.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+
+from line_fit import Line3D, fit_lines
 
 
 def load_points(csv_path: str | Path) -> pd.DataFrame:
@@ -55,6 +57,23 @@ def filter_dense_voxels(
     return df[counts >= min_count]
 
 
+def overlay_lines(fig: go.Figure, lines: Iterable[Line3D]) -> go.Figure:
+    """Add each fitted line as a Scatter3d line trace on top of `fig`."""
+    palette = ["#e6194B", "#f58231", "#ffe119", "#3cb44b", "#4363d8", "#911eb4"]
+    for i, line in enumerate(lines):
+        (x0, y0, z0), (x1, y1, z1) = line.endpoints()
+        color = palette[i % len(palette)]
+        fig.add_trace(
+            go.Scatter3d(
+                x=[x0, x1], y=[y0, y1], z=[z0, z1],
+                mode="lines",
+                line=dict(color=color, width=6),
+                name=f"line {i} (n={line.inlier_count})",
+            )
+        )
+    return fig
+
+
 def plot_event(
     df: pd.DataFrame,
     event_id: int,
@@ -62,6 +81,9 @@ def plot_event(
     min_count: int = 1,
     max_points: int = 20_000,
     marker_size: int = 2,
+    n_lines: int = 0,
+    fit_threshold_mm: float = 3.0,
+    fit_min_inliers: int = 20,
     title: Optional[str] = None,
 ) -> go.Figure:
     """Return a Plotly Figure for one event.
@@ -112,15 +134,30 @@ def plot_event(
                     colorscale="Viridis",
                     colorbar=dict(title="log10(charge)"),
                 ),
+                name="hits",
             )
         ]
     )
+
+    n_fit = 0
+    if n_lines > 0 and shown > 0:
+        pts_xyz = ev[["x_mm", "y_mm", "z_mm"]].to_numpy()
+        lines = fit_lines(
+            pts_xyz,
+            n_lines=n_lines,
+            distance_threshold_mm=fit_threshold_mm,
+            min_inliers=fit_min_inliers,
+        )
+        overlay_lines(fig, lines)
+        n_fit = len(lines)
+
     fig.update_layout(
         title=title
         or (
             f"event {event_id}  "
-            f"raw={raw_total}  after filter={kept}  shown={shown}  "
-            f"(voxel={voxel_size_mm} mm, min_count={min_count})"
+            f"raw={raw_total}  after filter={kept}  shown={shown}"
+            + (f"  lines fit={n_fit}/{n_lines}" if n_lines > 0 else "")
+            + f"  (voxel={voxel_size_mm} mm, min_count={min_count})"
         ),
         scene=dict(
             xaxis_title="x [mm]",

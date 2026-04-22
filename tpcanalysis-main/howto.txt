@@ -1,0 +1,24 @@
+Conversion graw to root 2 options:
+    Virual machine Graw2Root64:
+        - source /home/elitpc/Documents/root/installdir/bin/thisroot.sh 
+        - /home/elitpc/Desktop/get/CoBoFrameViewer-release-20190315/src/graw2root/cobo-frame-graw2root CoBo_ALL_AsAd_ALL_2021-07-12T11\:36\:07.452_0000.graw 
+        - Run from the folder with the CoBoFormats.xcfg files
+
+    The elitpc_tpcreco-sim-dev.sif container:
+        - Run container with 'xhost +' and 'sudo singularity run --bind /home/gant/.tpcreco/:/home/gant/.tpcreco/ elitpc_tpcreco-sim-dev.sif'
+        - Run from the folder with the CoBoFormats.xcfg files. (/home/gant/Desktop/tpcpl/data)
+        - In the container use "cobo-frame-graw2root [grawfile] [rootfile]" to convert. (Example in /home/gant/Desktop/tpcpl/data/convertfrom.sh)
+        
+        
+        
+        To convert .graw to .root 
+
+	$ cobo-frame-graw2root filename.graw
+	
+	
+To extract 2D pictures from root file:
+
+	$root
+	[] .L runmacro_mini.cpp
+	[] runmacro_mini({"-convert","-norm0","-clean0","-zip0","../Desktop/TPC_Share/CoBo_2026-04-21_0000.root"})
+

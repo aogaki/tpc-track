@@ -11,8 +11,11 @@ endif()
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-add_library(tpctrack_geometry src/geometry.cpp)
-target_include_directories(tpctrack_geometry PUBLIC include)
+add_library(tpctrack_core
+    src/geometry.cpp
+    src/hit_extraction.cpp
+)
+target_include_directories(tpctrack_core PUBLIC include)
 
 enable_testing()
 
@@ -28,7 +31,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(doctest)
 
 add_executable(test_geometry tests/test_geometry.cpp)
-target_link_libraries(test_geometry PRIVATE tpctrack_geometry doctest::doctest)
+target_link_libraries(test_geometry PRIVATE tpctrack_core doctest::doctest)
 target_compile_definitions(test_geometry PRIVATE
     TPCTRACK_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tpcanalysis-main/utils")
 add_test(NAME test_geometry COMMAND test_geometry)
+
+add_executable(test_hit_extraction tests/test_hit_extraction.cpp)
+target_link_libraries(test_hit_extraction PRIVATE tpctrack_core doctest::doctest)
+add_test(NAME test_hit_extraction COMMAND test_hit_extraction)

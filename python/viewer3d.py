@@ -62,7 +62,6 @@ def plot_event(
     min_count: int = 1,
     max_points: int = 20_000,
     marker_size: int = 2,
-    xy_range_mm: float = 120.0,
     title: Optional[str] = None,
 ) -> go.Figure:
     """Return a Plotly Figure for one event.
@@ -124,10 +123,10 @@ def plot_event(
             f"(voxel={voxel_size_mm} mm, min_count={min_count})"
         ),
         scene=dict(
-            xaxis=dict(title="x [mm]", range=[-xy_range_mm, xy_range_mm]),
-            yaxis=dict(title="y [mm]", range=[-xy_range_mm, xy_range_mm]),
-            zaxis=dict(title="z [mm]"),
-            aspectmode="cube",
+            xaxis_title="x [mm]",
+            yaxis_title="y [mm]",
+            zaxis_title="z [mm]",
+            aspectmode="data",
         ),
         width=900,
         height=700,

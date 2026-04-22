@@ -10,6 +10,17 @@
 
 以下では入力を `<root>` と表記する。
 
+## 事前準備: GET ディクショナリライブラリの build (1 回だけ)
+
+`verify_plot.cpp` も `run_mini.cpp` も `tpcanalysis-main/dict/build/libMyLib.dylib` を `R__LOAD_LIBRARY` で読み込む。未ビルドなら最初に作る:
+
+```bash
+cd tpcanalysis-main/dict
+cmake -B build -S . && cmake --build build
+```
+
+install_name は絶対パスで焼かれるので、DYLD_LIBRARY_PATH は不要。
+
 ## Step 1: リファレンス PNG (既存マクロ)
 
 既存の `runmacro_mini` を `-convert -norm0 -clean0 -zip0` で走らせる。出力は入力 `.root` と同じディレクトリの `images_none/<rootname>/` に入る。
@@ -28,12 +39,23 @@ root -b -q 'runmacro_mini.cpp({"-convert","-norm0","-clean0","-zip0","<root>"})'
 
 1 event だけ処理する検証マクロ。UVW PNG は Step 1 と同条件、加えて M1–M3 のストリップ座標変換 + `extractHits` を用いた XY PNG (ストリップ線ラスタライズ) を出す。
 
-**ACLiC (`+`) は使わない**。ROOT 6.36 で GET ディクショナリのリンクが落ちるので、cling インタプリタで走らせる (これは howto.txt の `.L runmacro_mini.cpp` と同じ方式)。
+通常はインタプリタ (cling) で走らせる。これは `howto.txt` の `.L runmacro_mini.cpp` と同じ方式:
 
 ```bash
 cd tpcanalysis-main
 ROOT_INCLUDE_PATH=../include root -b -q 'verify_plot.cpp("<root>", 0)'
 ```
+
+**ACLiC で速く走らせたい場合** (40% 程度高速, 初回は compile 込み ~15秒):
+
+```bash
+cd tpcanalysis-main
+ROOT_INCLUDE_PATH=../include root -b -q \
+    -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.dylib");' \
+    'verify_plot.cpp+("<root>", 0)'
+```
+
+`AddLinkedLibs` を ACLiC の link 段階に渡す必要がある。2 回目以降は `.so` がキャッシュされるので `-e` 無しでも動く (引数部分のみで OK)。
 
 出力先: `verification/new/<rootname>/{0_u.png, 0_v.png, 0_w.png, 0_xy.png}`
 

@@ -22,28 +22,22 @@
 #include "TString.h"
 #include "TStyle.h"
 
+// Load the pre-built GET dictionary. See run_mini.cpp for build notes.
+R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
+
 // tpcanalysis-main upstream pipeline (loadData + convertUVW_mini, NO cleanUVW).
-// Include order mirrors runmacro_mini.cpp (application .cpp first, dict .cpp
-// last) to avoid duplicate-definition issues in the ROOT ACLiC dictionary.
 #include "include/ErrorCodesMap.hpp"
 #include "src/convertUVW_mini.cpp"
 #include "src/loadData.cpp"
 #include "include/generalDataStorage.hpp"
 
-// tpctrack new pipeline (ACLiC needs the .cpp alongside the headers).
-// Call ROOT with: gSystem->AddIncludePath(" -I../include ")
+// tpctrack new pipeline. ROOT_INCLUDE_PATH=../include at invocation time.
 #include "../include/tpctrack/geometry.hpp"
 #include "../include/tpctrack/hit_extraction.hpp"
 #include "../include/tpctrack/uvw_xyz.hpp"
 #include "../src/geometry.cpp"
 #include "../src/hit_extraction.cpp"
 #include "../src/uvw_xyz.cpp"
-
-// GET dict .cpp go last, same as runmacro_mini.cpp.
-#include "dict/src/GDataChannel.cpp"
-#include "dict/src/GDataFrame.cpp"
-#include "dict/src/GDataSample.cpp"
-#include "dict/src/GFrameHeader.cpp"
 
 namespace {
 
@@ -159,8 +153,7 @@ void verify_plot(TString rootFile, int event_nr = 0) {
     auto hits = tpctrack::extractHits(signals, threshold);
     auto pts = tpctrack::hitsToPoints(geo, hits);
 
-    std::cout << "hits=" << hits.size() << " 3D points (strict)=" << pts.size()
-              << "\n";
+    std::cout << "hits=" << hits.size() << "  3D points=" << pts.size() << "\n";
 
     // XY visualization: rasterize each strip line weighted by hit charge.
     // Every hit lives on a line in the (x, y) plane determined by its strip's

@@ -19,8 +19,15 @@
 #include "TString.h"
 #include "TSystem.h"
 
-// tpcanalysis-main upstream pipeline. Order matches runmacro_mini.cpp to
-// keep ACLiC happy when someone tries to compile it (we run interpreted).
+// Load the pre-built GET dictionary from tpcanalysis-main/dict/build/.
+// This replaces the old approach of textually #include'ing the dict .cpp
+// files, which confused ACLiC. With the library loaded, ACLiC (`+`) works.
+//
+// Build it once with:
+//   (cd dict && cmake -B build -S . && cmake --build build)
+R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
+
+// tpcanalysis-main upstream pipeline.
 #include "include/ErrorCodesMap.hpp"
 #include "src/cleanUVW.cpp"
 #include "src/convertUVW_mini.cpp"
@@ -34,11 +41,6 @@
 #include "../src/geometry.cpp"
 #include "../src/hit_extraction.cpp"
 #include "../src/uvw_xyz.cpp"
-
-#include "dict/src/GDataChannel.cpp"
-#include "dict/src/GDataFrame.cpp"
-#include "dict/src/GDataSample.cpp"
-#include "dict/src/GFrameHeader.cpp"
 
 namespace {
 

@@ -168,6 +168,21 @@ CSV カラム: `event_id, x_mm, y_mm, z_mm, charge`。
 
 最初は `voxel=0, min_count=1` で素のまま → ノイズ多いなら `voxel=1, min_count=10` で絞る。
 
+### Step C. バッチフィット: 全 event の直線だけを 1 枚に重ね描き
+
+Step B のセルの下にもう 1 つウィジェットブロックがあり、**同じフィット設定で全 event を回して、フィット直線だけを 1 つの 3D 図に重ねる**。Step B のスライダ (voxel / min_count / n_lines / fit_thresh) をそのまま使うので、まず個別 event でいい設定を見つけてからボタンを押す流れ。
+
+| ウィジェット | 意味 |
+| --- | --- |
+| `Fit all events` | バッチフィット発火。実行中は押せない |
+| `progress` / `status` | 進捗。142 event で数十秒、1000+ で数分 |
+| `color by` | `event_id` (Viridis で時間方向グラデ)、`inliers` (Viridis でフィット品質)、`none` (単色、opacity のみで区別) |
+| `opacity` | 1 本あたりの透明度 0.05-1.0。1000+ 本描くなら 0.1-0.2 が見やすい |
+
+`color by` / `opacity` を変えると**再フィットせず描画だけ更新**されるのでサクサク見比べ可能。Step B のスライダを変えた後は再度ボタンを押す。
+
+pad 平面 = XY 平面、z 軸 = ドリフト方向 (ビーム軸 z=0)。真上から見下ろすと U/V/W 3 family のストリップが重なった pad 平面の絵になる。
+
 ## テスト
 
 ```bash

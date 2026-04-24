@@ -193,6 +193,28 @@ Run the cells top to bottom; the third cell exposes widgets:
 
 Start with `voxel=0, min_count=1`; tighten later (`voxel=1, min_count=10`).
 
+### Step C. Batch fit: all events, lines only
+
+The cell below the single-event viewer runs the same fitter on every
+event in the file and draws **only the fitted lines** on one 3D figure.
+It inherits the voxel filter and fit parameters from the single-event
+sliders — tune those first, then hit the **Fit all events** button.
+
+| Widget | Role |
+| --- | --- |
+| `Fit all events` | Runs the batch fit. Disabled while fitting. |
+| `progress` / `status` | Live event counter. 142 events ≈ tens of seconds; 1000+ takes minutes. |
+| `color by` | `event_id` (Viridis over time), `inliers` (Viridis over fit quality), or `none` (single colour — differentiate by opacity). |
+| `opacity` | Per-line alpha, 0.05 – 1.0. Lower it for 1000+-line plots so the detector interior stays readable. |
+
+Changing `color by` or `opacity` re-renders instantly **without refitting**
+— the pair list is cached. Change any slider in Step B and press the
+button again to refit.
+
+The pad plane is the XY plane; `z_mm` is the drift coordinate (beam
+axis at `z = 0`). Looking "straight down" the z axis in the 3D view
+shows the U/V/W strip pattern overlaid.
+
 ---
 
 ## Tests

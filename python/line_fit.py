@@ -15,9 +15,10 @@ Design goals:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 from scipy.optimize import minimize
 
 
@@ -129,4 +130,46 @@ def fit_lines(
             )
         )
         remaining = remaining[~inlier_mask]
+    return out
+
+
+def fit_all_events(
+    df: pd.DataFrame,
+    filter_fn: Callable[[pd.DataFrame], pd.DataFrame],
+    n_lines: int = 3,
+    distance_threshold_mm: float = 3.0,
+    min_inliers: int = 20,
+    progress: Optional[Callable[[int, int], None]] = None,
+) -> List[Tuple[int, Line3D]]:
+    """Run `fit_lines` on every event in `df` and return (event_id, line) pairs.
+
+    Parameters
+    ----------
+    df : DataFrame with columns event_id, x_mm, y_mm, z_mm, charge.
+    filter_fn : function taking the per-event DataFrame and returning the
+        point subset to feed the fitter. The viewer passes its voxel filter
+        here so batch fits see the same points the interactive view does.
+    n_lines, distance_threshold_mm, min_inliers : forwarded to fit_lines.
+    progress : optional callback(done, total) for UI updates.
+    """
+    event_ids = sorted(df["event_id"].unique().tolist())
+    total = len(event_ids)
+    out: List[Tuple[int, Line3D]] = []
+    for i, eid in enumerate(event_ids):
+        ev = df[df["event_id"] == eid]
+        ev = filter_fn(ev)
+        if len(ev) < min_inliers:
+            if progress:
+                progress(i + 1, total)
+            continue
+        pts = ev[["x_mm", "y_mm", "z_mm"]].to_numpy()
+        for line in fit_lines(
+            pts,
+            n_lines=n_lines,
+            distance_threshold_mm=distance_threshold_mm,
+            min_inliers=min_inliers,
+        ):
+            out.append((int(eid), line))
+        if progress:
+            progress(i + 1, total)
     return out

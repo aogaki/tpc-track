@@ -5,7 +5,7 @@
 // writes a single CSV with columns (event_id, x_mm, y_mm, z_mm, charge).
 //
 // Usage (from tpcanalysis-main/):
-//   ROOT_INCLUDE_PATH=../include root -b -q 'run_mini.cpp("<root>")'
+//   root -b -q 'run_mini.cpp("<root>")'
 //
 // Output:
 //   <root> の隣に <rootname>_points.csv を作る
@@ -19,13 +19,17 @@
 #include "TString.h"
 #include "TSystem.h"
 
+// Tell cling / ACLiC where our headers live so the user doesn't have to
+// set ROOT_INCLUDE_PATH manually. Relative to the working directory
+// (tpcanalysis-main/) which is where this macro is expected to be run.
+#pragma cling add_include_path("../include")
+
 // Load the pre-built GET dictionary from tpcanalysis-main/dict/build/.
-// This replaces the old approach of textually #include'ing the dict .cpp
-// files, which confused ACLiC. With the library loaded, ACLiC (`+`) works.
+// No extension: gSystem picks .dylib on macOS and .so on Linux.
 //
 // Build it once with:
 //   (cd dict && cmake -B build -S . && cmake --build build)
-R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
+R__LOAD_LIBRARY(dict/build/libMyLib)
 
 // tpcanalysis-main upstream pipeline.
 #include "include/ErrorCodesMap.hpp"
@@ -34,7 +38,7 @@ R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
 #include "src/loadData.cpp"
 #include "include/generalDataStorage.hpp"
 
-// tpctrack new pipeline. ROOT_INCLUDE_PATH=../include at invocation time.
+// tpctrack new pipeline. Header search path set via the pragma above.
 #include "../include/tpctrack/geometry.hpp"
 #include "../include/tpctrack/hit_extraction.hpp"
 #include "../include/tpctrack/uvw_xyz.hpp"

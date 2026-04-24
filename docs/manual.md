@@ -220,16 +220,14 @@ python3 -m venv .venv
 cd tpcanalysis-main
 
 # インタプリタモード (起動早い、~20秒で 142 event)
-ROOT_INCLUDE_PATH=../include root -b -q \
-    'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
+root -b -q 'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 
 初回のみ:
 
 ```bash
 # ACLiC モード (.so キャッシュで 2 回目以降 ~12 秒、初回は ~15 秒)
-ROOT_INCLUDE_PATH=../include root -b -q \
-    -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
+root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
     'run_mini.cpp+("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 

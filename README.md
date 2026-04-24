@@ -235,16 +235,14 @@ python3 -m venv .venv
 cd tpcanalysis-main
 
 # Interpreter mode (fast startup, ~20 s for 142 events)
-ROOT_INCLUDE_PATH=../include root -b -q \
-    'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
+root -b -q 'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 
 For repeated runs:
 
 ```bash
 # ACLiC mode — ~15 s cold compile, ~12 s with cached .so
-ROOT_INCLUDE_PATH=../include root -b -q \
-    -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
+root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
     'run_mini.cpp+("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 

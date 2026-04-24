@@ -43,15 +43,14 @@ root -b -q 'runmacro_mini.cpp({"-convert","-norm0","-clean0","-zip0","<root>"})'
 
 ```bash
 cd tpcanalysis-main
-ROOT_INCLUDE_PATH=../include root -b -q 'verify_plot.cpp("<root>", 0)'
+root -b -q 'verify_plot.cpp("<root>", 0)'
 ```
 
 **ACLiC で速く走らせたい場合** (40% 程度高速, 初回は compile 込み ~15秒):
 
 ```bash
 cd tpcanalysis-main
-ROOT_INCLUDE_PATH=../include root -b -q \
-    -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.dylib");' \
+root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
     'verify_plot.cpp+("<root>", 0)'
 ```
 

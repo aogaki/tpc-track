@@ -22,8 +22,12 @@
 #include "TString.h"
 #include "TStyle.h"
 
+// Tell cling / ACLiC where our headers live (no ROOT_INCLUDE_PATH needed).
+#pragma cling add_include_path("../include")
+
 // Load the pre-built GET dictionary. See run_mini.cpp for build notes.
-R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
+// No extension: gSystem picks .dylib on macOS and .so on Linux.
+R__LOAD_LIBRARY(dict/build/libMyLib)
 
 // tpcanalysis-main upstream pipeline (loadData + convertUVW_mini, NO cleanUVW).
 #include "include/ErrorCodesMap.hpp"
@@ -31,7 +35,7 @@ R__LOAD_LIBRARY(dict/build/libMyLib.dylib)
 #include "src/loadData.cpp"
 #include "include/generalDataStorage.hpp"
 
-// tpctrack new pipeline. ROOT_INCLUDE_PATH=../include at invocation time.
+// tpctrack new pipeline. Header search path set via the pragma above.
 #include "../include/tpctrack/geometry.hpp"
 #include "../include/tpctrack/hit_extraction.hpp"
 #include "../include/tpctrack/uvw_xyz.hpp"

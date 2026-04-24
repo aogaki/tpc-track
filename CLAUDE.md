@@ -20,13 +20,21 @@
 ## プロジェクト概要
 
 - 目的: miniTPC の `.root` ファイルを読み、**1 イベントを Plotly で 3D ぐりぐり回せる**可視化を作る。将来は 3D 直線フィットへ。
-- コードベースの全体解析: [docs/tpcanalysis_overview.md](docs/tpcanalysis_overview.md)
-- 上流の既存コード: [tpcanalysis-main/](tpcanalysis-main/) (C++ / ROOT マクロ)
+- セットアップと日常フロー: [README.md](README.md) (英) / [docs/manual.md](docs/manual.md) (日)
+- コードベースの歴史的解析 (旧 tpcanalysis-main レイアウト): [docs/tpcanalysis_overview.md](docs/tpcanalysis_overview.md)
 - 生データ: [raw_run_files/](raw_run_files/) に `CoBo_2026-04-*_*.root`
+
+## レイアウト
+
+- `include/tpctrack/`, `src/tpctrack/` — 我々の ROOT-free ライブラリ
+- `include/upstream/`, `src/upstream/` — vendored miniTPC reader + GET 辞書 (ROOT 依存)
+- `tools/run_mini_main.cpp` — standalone 実行ファイル (`./build/run_mini`)
+- `python/viewer3d.ipynb` — Plotly 3D viewer
+- `utils/` — 実行時の設定ファイル
 
 ## 言語分担
 
-- **C++ / ROOT マクロ**: `.root` → UVW → ヒット点群 → `(x, y, z, charge)` の CSV/TTree 出力まで
+- **C++ (CMake + ROOT)**: `.root` → UVW → ヒット点群 → `(x, y, z, charge)` の CSV 出力まで
 - **Python (Plotly)**: 点群読み込み → 3D 可視化 → 3D 直線フィット
 
 ## 確認済みの物理パラメータ (miniTPC)

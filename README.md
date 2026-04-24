@@ -12,32 +12,58 @@ both in sync when making changes that affect the workflow.
 ## Contents
 
 1. [What the project does](#what-the-project-does)
-2. [System requirements](#system-requirements)
-3. [Ubuntu setup](#ubuntu-setup)
-4. [Getting the project](#getting-the-project)
-5. [One-time build](#one-time-build)
+2. [Layout](#layout)
+3. [System requirements](#system-requirements)
+4. [Ubuntu setup](#ubuntu-setup)
+5. [Build](#build)
 6. [Daily workflow](#daily-workflow)
-7. [Verification (M4 reference check)](#verification-m4-reference-check)
-8. [Tests](#tests)
-9. [Parameters and tuning](#parameters-and-tuning)
-10. [Troubleshooting](#troubleshooting)
-11. [Known limitations](#known-limitations)
+7. [Tests](#tests)
+8. [Parameters and tuning](#parameters-and-tuning)
+9. [Troubleshooting](#troubleshooting)
+10. [Known limitations](#known-limitations)
 
 ---
 
 ## What the project does
 
-- `.root` (miniTPC, GET electronics) → 3D point-cloud CSV.
-- Plotly notebook spins one event around in 3D.
-- Event navigation with arrow keys, voxel-coincidence filter to suppress
-  ghosts, iterative BFGS line fitter to draw detected tracks on top.
-- C++ side reuses the upstream `tpcanalysis-main` classes (`loadData`,
-  `convertUVW_mini`, `cleanUVW`); our own code takes care of hit
-  extraction, UVW → XYZ conversion, and CSV output.
+- `.root` (miniTPC, GET electronics) → 3D point-cloud CSV via a single
+  native executable (`./build/run_mini`). No ROOT macros, no environment
+  variables, no interactive cling.
+- Plotly notebook (`python/viewer3d.ipynb`) spins one event around in 3D
+  with event navigation, voxel-coincidence filter for ghost suppression,
+  and an iterative BFGS line fitter.
+- C++ side reuses the vendored miniTPC reader classes (`loadData`,
+  `convertUVW_mini`, `cleanUVW`) plus the GET class dictionary. Hit
+  extraction, UVW → XYZ geometry and CSV output are in our own
+  `tpctrack_core` library.
 - Python side handles CSV loading, voxel aggregation, BFGS line fitting,
   and Plotly rendering.
 
-For deeper architecture notes see [`docs/tpcanalysis_overview.md`](docs/tpcanalysis_overview.md).
+For architecture notes see [`docs/tpcanalysis_overview.md`](docs/tpcanalysis_overview.md).
+
+---
+
+## Layout
+
+```
+tpc-track/
+├── include/
+│   ├── tpctrack/       # our ROOT-free library headers
+│   └── upstream/       # vendored miniTPC classes + GET dictionary headers
+├── src/
+│   ├── tpctrack/       # our implementations
+│   └── upstream/       # vendored loadData / convertUVW / cleanUVW + GET dict sources
+├── tools/
+│   └── run_mini_main.cpp   # the standalone executable
+├── tests/              # doctest suites
+├── python/             # Plotly viewer + line fit
+├── utils/              # runtime config: geometry + strip normalization CSV
+├── docs/               # Japanese manual + architecture overview
+├── TODO/               # project plan & milestones
+├── CMakeLists.txt
+├── README.md           # you are here
+└── raw_run_files/      # data (git-ignored)
+```
 
 ---
 
@@ -47,32 +73,17 @@ For deeper architecture notes see [`docs/tpcanalysis_overview.md`](docs/tpcanaly
 | --- | --- | --- |
 | OS | Ubuntu 20.04 LTS | Ubuntu 22.04 / 24.04 |
 | C++ compiler | C++17 (gcc 7+ / clang 6+) | gcc 11+ |
-| CMake | 3.14 (needs FetchContent) | 3.22+ |
+| CMake | 3.16 | 3.22+ |
 | ROOT | 6.32 | 6.36+ |
 | Python | 3.9 | 3.11+ |
-| Disk | 3 GB (venv + ROOT + one raw file) | 10 GB+ |
-| RAM | 4 GB | 8 GB+ (to hold the 13 M-point CSV in pandas) |
+| Disk | 3 GB | 10 GB+ |
+| RAM | 4 GB | 8 GB+ (Pandas reads a 13 M-point CSV) |
 
 ### About Ubuntu 18.04
 
-18.04 is **not straightforward**:
-
-- gcc 7.5 technically supports C++17, but ROOT 6.32+ has no prebuilt
-  binaries for 18.04 (glibc 2.27 is too old).
-- CMake 3.10 lacks `FetchContent`. Bump to 3.22 via the kitware PPA below.
-- Python 3.6 is too old; install 3.11 via the `deadsnakes` PPA.
-
-If you must target 18.04, the practical options are:
-
-- **Older ROOT (6.24-ish)**: then revert `tpcanalysis-main/dict/CMakeLists.txt`
-  `c++17` back to `c++14` (the upstream default); our `tpctrack_core` still
-  needs C++17 which gcc 7.5 can provide.
-- **Build ROOT from source** (4–8 hours, not recommended).
-- **Docker / Singularity with a 22.04 image**: the cleanest option —
-  [`tpcanalysis-main/howto.txt`](tpcanalysis-main/howto.txt) already does this
-  for the upstream graw→root step.
-
-The rest of this README targets 20.04 / 22.04 / 24.04.
+18.04 is **not straightforward**: glibc 2.27 is too old for prebuilt ROOT
+binaries, and CMake / Python need PPAs. Use a 22.04 Docker/Singularity
+image instead, or build ROOT 6.24 from source.
 
 ---
 
@@ -86,142 +97,61 @@ sudo apt install -y \
     build-essential cmake git \
     python3 python3-venv python3-pip \
     libxpm-dev libxft-dev libxext-dev \
-    libgl1-mesa-dev libglu1-mesa-dev \
-    imagemagick                       # used by the PNG diff script
+    libgl1-mesa-dev libglu1-mesa-dev
 ```
 
-The X/GL libraries are ROOT graphics dependencies. `run_mini.cpp` runs
-headless, but `verify_plot.cpp` writes PNGs via `TCanvas::Print` and needs
-them.
-
-### 2. Up-to-date CMake (only if apt ships <3.14)
+### 2. CMake 3.16+ (bump via kitware PPA if apt is too old)
 
 ```bash
 sudo apt install -y software-properties-common
 wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc | sudo apt-key add -
 sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
 sudo apt update && sudo apt install -y cmake
-cmake --version   # expect 3.22+
 ```
 
-### 3. Install ROOT
+### 3. ROOT
 
-**(A) Official prebuilt tarball — recommended**
+Install the ROOT prebuilt tarball for your Ubuntu release (recommended),
+or use `conda install -c conda-forge root=6.36`. Make sure `root
+--version` reports 6.32 or newer and `thisroot.sh` is sourced.
 
 ```bash
-# Pick the tarball matching your distro at https://root.cern/install/all_releases/
-# Example: ROOT 6.36.10 for Ubuntu 22.04
 cd /opt
 sudo wget https://root.cern/download/root_v6.36.10.Linux-ubuntu22.04-x86_64-gcc11.4.tar.gz
 sudo tar -xzf root_v6.36.10.Linux-*.tar.gz
 echo 'source /opt/root/bin/thisroot.sh' >> ~/.bashrc
 source ~/.bashrc
-root --version
 ```
 
-**(B) conda (self-contained env)**
-
-```bash
-conda create -n tpctrack -c conda-forge root=6.36 python=3.11
-conda activate tpctrack
-```
-
-**(C) snap (easiest, but versions lag)**
-
-```bash
-sudo snap install root-framework
-```
-
-Verify with `root --version`; it must report 6.32 or newer.
-
-### 4. Python 3.9+
-
-```bash
-python3 --version
-```
-
-If too old:
-
-```bash
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install -y python3.11 python3.11-venv
-# Then read "python3" below as "python3.11".
-```
+### 4. Python 3.9+ (via `deadsnakes` PPA if needed)
 
 ---
 
-## Getting the project
+## Build
+
+**One command from a fresh clone:**
 
 ```bash
-cd ~/work                       # wherever you keep projects
-git clone <tpc-track URL> tpc-track
 cd tpc-track
-```
-
-Layout:
-
-```
-tpc-track/
-├── tpcanalysis-main/           # upstream copy (vendored)
-│   ├── dict/                   # GET dictionary library (build once)
-│   ├── runmacro_mini.cpp       # original upstream macro (don't edit)
-│   ├── run_mini.cpp            # OUR production macro
-│   └── verify_plot.cpp         # OUR M4 verification macro
-├── include/tpctrack/           # our headers
-├── src/                        # our implementation
-├── tests/                      # C++ tests (doctest)
-├── python/
-│   ├── viewer3d.py             # Plotly rendering
-│   ├── line_fit.py             # 3D line fitter (BFGS)
-│   ├── viewer3d.ipynb          # interactive notebook
-│   └── tests/                  # Python tests (pytest)
-├── scripts/
-│   └── compare_png.py          # pixel-level PNG diff
-├── docs/                       # Japanese manual, verification notes, overview
-└── TODO/                       # roadmap and per-milestone specs
-```
-
----
-
-## One-time build
-
-### 1. GET dictionary library (C++)
-
-Required so ROOT macros can see `GDataFrame` etc. Produces
-`libMyLib.so` (Linux) / `libMyLib.dylib` (macOS).
-
-```bash
-cd tpcanalysis-main/dict
 cmake -B build -S .
 cmake --build build -j
-ls build/libMyLib.so   # or .dylib on macOS
 ```
 
-The CMakeLists bakes the absolute build path into the library's
-`install_name`, so no `LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` is needed
-later.
+This produces:
 
-### 2. `tpctrack_core` + C++ tests
+- `build/libtpctrack_core.a` — our library
+- `build/libtpc_upstream.dylib` / `.so` — vendored code + GET dictionary
+- `build/libtpc_upstream_rdict.pcm` — ROOT auto-loads this at runtime
+- `build/run_mini` — the executable
+- `build/test_geometry`, `build/test_hit_extraction`, `build/test_uvw_xyz`
 
-```bash
-cd ../..                                  # back to project root
-cmake -B build -S .
-cmake --build build -j
-cd build && ctest --output-on-failure     # expect 3 targets / 21 cases green
-cd ..
-```
-
-### 3. Python venv
+Create the Python environment once:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install plotly pandas ipywidgets jupyterlab scipy numpy pytest kaleido
-.venv/bin/python -m pytest python/tests -q   # expect 5 cases green
 ```
-
-`.venv/` is git-ignored.
 
 ---
 
@@ -229,106 +159,69 @@ python3 -m venv .venv
 
 ### Step A. `.root` → point-cloud CSV
 
-**Single-argument API. File path is the only input:**
+Run from the project root so `utils/` resolves:
 
 ```bash
-cd tpcanalysis-main
+# Output auto-named <input>_points.csv next to the input
+./build/run_mini raw_run_files/CoBo_2026-04-06_0001.root
 
-# Interpreter mode (fast startup, ~20 s for 142 events)
-root -b -q 'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
+# Explicit output path
+./build/run_mini raw_run_files/CoBo_2026-04-06_0001.root /tmp/custom.csv
 ```
 
-For repeated runs:
-
-```bash
-# ACLiC mode — ~15 s cold compile, ~12 s with cached .so
-root -b -q 'run_mini.cpp+O("../raw_run_files/CoBo_2026-04-06_0001.root")'
-```
-
-Output: `<input>_points.csv` next to the input `.root`, with columns
-`event_id, x_mm, y_mm, z_mm, charge`.
-
-Internal pipeline defaults (hard-coded in `run_mini.cpp`):
-
-- `norm = true`, `clean = true`
-- hit threshold 30 ADC, 3-plane charge-ratio filter 2.0
-
-Adjust the `constexpr` values at the top of `run_mini.cpp` if you really
-need to change them.
+Columns: `event_id, x_mm, y_mm, z_mm, charge`. Internal defaults in
+`tools/run_mini_main.cpp`: `norm=true`, `clean=true`, hit threshold 30 ADC,
+3-plane charge-ratio filter 2.0. Edit the `constexpr` block and rebuild
+if you need to change them.
 
 ### Step B. Interactive 3D viewer
 
 ```bash
-cd <project root>
 .venv/bin/jupyter lab python/viewer3d.ipynb
 ```
 
-Run the cells top to bottom. The third cell exposes the widgets:
+Run the cells top to bottom; the third cell exposes widgets:
 
 | Widget | Role |
 | --- | --- |
-| `event_id` | Click the box, then ↑/↓ to step ±1 or type a number directly. |
-| `voxel [mm]` | Voxel edge length (0 disables the filter). |
-| `min_count` | Drop voxels that received fewer than this many combos. |
-| `max pts` | Safety cap on rendered markers (highest-charge retained). |
-| `n lines` | Fitted lines to overlay (0 = no fit). |
-| `fit thresh` | Inlier distance [mm] for line fitting. |
+| `event_id` | ↑/↓ to step ±1, or type a number directly |
+| `voxel [mm]` | Voxel edge length; 0 disables the coincidence filter |
+| `min_count` | Minimum combos per voxel to keep |
+| `max pts` | Safety cap on rendered markers (top-charge kept) |
+| `n lines` | Fitted lines to overlay (0 = no fit) |
+| `fit thresh` | Inlier distance [mm] for line fitting |
 
-**Sensible starting values**: `voxel=0, min_count=1` (raw view). Tighten
-later — try `voxel=1, min_count=10` for gentle ghost rejection.
-
-**When to restart the kernel**: only when you edit `viewer3d.py` or
-`line_fit.py`. Changing slider values is live.
-
----
-
-## Verification (M4 reference check)
-
-To confirm the new pipeline matches the upstream `runmacro_mini -norm0
--clean0` output pixel-for-pixel, follow the procedure in
-[`docs/verify.md`](docs/verify.md). Short version:
-
-1. Generate reference PNGs with `runmacro_mini`.
-2. Generate comparison PNGs with `verify_plot.cpp`.
-3. Diff with `scripts/compare_png.py`.
-
-Same ROOT version on both sides → 0 pixel diff. Different ROOT versions
-typically diverge by 10–15 % on anti-aliasing / palette noise only — not
-a pipeline issue.
+Start with `voxel=0, min_count=1`; tighten later (`voxel=1, min_count=10`).
 
 ---
 
 ## Tests
 
 ```bash
-# C++ (doctest via CMake)
+# C++ (doctest)
 cd build && ctest --output-on-failure
 
 # Python (pytest)
 .venv/bin/python -m pytest python/tests -q
 ```
 
-CI or sanity checks: just those two commands must pass.
-
 ---
 
 ## Parameters and tuning
 
-### `run_mini.cpp` `constexpr`s
+### `tools/run_mini_main.cpp` `constexpr` block
 
 ```cpp
 constexpr bool kNorm = true;
 constexpr bool kClean = true;
-constexpr double kHitThreshold = 30.0;   // ADC above cleaned baseline
-constexpr double kMaxChargeRatio = 2.0;  // 3-plane charge agreement
+constexpr double kHitThreshold = 30.0;
+constexpr double kMaxChargeRatio = 2.0;
 ```
 
-- Lower `kHitThreshold` → more hits (including noise); higher → weaker
-  tracks get lost. 30 ADC on cleaned signal is comfortably above noise.
-- `kMaxChargeRatio = 2.0` means "all three planes agree within 2×".
-  Raise to let more combinations through, lower to be stricter.
+- `kHitThreshold`: lower → more hits (noise); higher → weaker tracks lost.
+- `kMaxChargeRatio = 2.0`: require 3-plane charges within 2×.
 
-### Voxel thresholds in `viewer3d`
+### Voxel filter in the viewer
 
 Scan on event 0 of `CoBo_2026-04-06_0001` (raw = 35 k):
 
@@ -339,82 +232,38 @@ Scan on event 0 of `CoBo_2026-04-06_0001` (raw = 35 k):
 | 20 | ~38 % |
 | 50 | <1 % |
 
-Around 20 the filter starts eating into real track tails. The default
-(filter off, `voxel=0`) is designed for "look first, tighten later".
-
-### Line fitting
-
-- `n_lines`: start at 2–3; increase if tracks are missing.
-- `fit thresh`: 3 mm by default; slightly wider than pad pitch (1 mm)
-  and z bin width (~0.3 mm).
-
 ---
 
 ## Troubleshooting
 
-### `Library not loaded: @rpath/libMyLib.so`
+### `./build/run_mini` reports "convertUVW_mini::openSpecFile failed"
 
-Rebuild the dict library — the fixed `install_name` gets re-baked:
+You launched from the wrong directory. `utils/new_geometry_mini_eTPC.dat`
+is looked up relative to cwd; run from the project root.
 
-```bash
-cd tpcanalysis-main/dict && rm -rf build && cmake -B build -S . && cmake --build build
-```
+### ROOT `find_package` fails during `cmake -B build`
 
-### ACLiC (`+`) fails with `GET::GDataFrame::Class()` not found
+`thisroot.sh` isn't sourced. Source it and re-run `cmake`.
 
-The dict library isn't built yet, or you launched ROOT from a directory
-without `rootlogon.C`. Run from `tpcanalysis-main/` so `rootlogon.C`
-auto-wires the include path and `-lMyLib` link flag.
+### `import line_fit` fails under pytest
 
-### `compare_png.py` reports 10–15 % diff
-
-Different ROOT versions used for reference vs. new generation. Rerun
-`runmacro_mini` under the current ROOT and re-diff — expect 0 px.
-Details in [`docs/verify.md`](docs/verify.md).
-
-### Plotly is sluggish / freezes
-
-Reduce `max pts` (below 5 000) or enable the voxel filter
-(`voxel>0, min_count>1`). Browsers start stuttering above ~50 000 points
-per event.
-
-### `ModuleNotFoundError: line_fit` in pytest
-
-Run pytest from the **project root** so the `sys.path.insert` at the top
-of the test file resolves correctly:
+Run pytest from the project root:
 
 ```bash
 .venv/bin/python -m pytest python/tests -q
 ```
 
-### CMake warns about `cmake_minimum_required`
+### Plotly sluggish / freezes
 
-doctest (pulled by `FetchContent`) asks for a pre-3.5 policy, CMake 4
-nags. We set `CMAKE_POLICY_VERSION_MINIMUM=3.5` already — warning only,
-no functional issue.
-
-### ROOT won't run on Ubuntu 18.04
-
-glibc 2.27 is too old for modern ROOT binaries. Use Docker/Singularity
-with a 22.04 image, pin ROOT to 6.24, or upgrade the OS.
+Reduce `max pts` (below 5 000) or enable the voxel filter.
 
 ---
 
 ## Known limitations
 
-- **Hit count differs between interpreter and ACLiC** (~946 k vs.
-  ~1.39 M): cling FP vs. -O2 native FP. Treat ACLiC as canonical for
-  numerical runs.
-- **3D points include cartesian-product ghosts.** The voxel filter is
-  the first line of defence. More physics-aware rejection is future
-  work.
-- **`hitsToPoints` currently trusts any combination passing the charge
-  filter.** Fine for visualisation; be cautious before feeding points
-  downstream into precision fits.
-- **Z sign convention depends on `TRIGGER DELAY`.** `z_mm = (time_bin -
-  256) * drift_velocity * bin_width`. Cross-check with your beam
-  direction before doing physics.
-- **ELITPC is not supported.** Upstream files remain in the tree, but
-  the production pipeline targets miniTPC only.
-- **Changing `run_mini.cpp` `constexpr`s changes all downstream
-  numbers.** Record configuration in git so results are reproducible.
+- **3D points include cartesian-product ghosts.** The voxel filter is the
+  first defence; smarter physics-based rejection is future work.
+- **Z convention:** `z_mm = (time_bin - 256) * drift_velocity * bin_width`.
+  Sign depends on the beam direction; cross-check before physics use.
+- **miniTPC only.** ELITPC support was removed along with its vendored
+  files to keep the tree lean.

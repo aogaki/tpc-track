@@ -1,6 +1,17 @@
-# tpcanalysis-main コード解析ドキュメント
+# upstream コード解析ドキュメント (歴史的)
 
-本書は `tpc-track` プロジェクト直下にある `tpcanalysis-main` の C++/Python コードを読み解き、3D トラック再構成へ拡張する出発点として使えるようにまとめたものである。実コードから抽出した事実と Gemini による補足解析を統合している。
+**注意**: 本書は元の `tpcanalysis-main/` ディレクトリが project root に vendored されていた時期に書かれたもの。その後、必要なファイルだけを `include/upstream/` と `src/upstream/` に移動し、`tpcanalysis-main/` は削除した。**パスの記述は古いが、パイプラインの設計思想・物理パラメータ・アルゴリズムの解説は現行コードにもそのまま当てはまる**。新レイアウトでの読み替え:
+
+| 旧パス | 新パス |
+| --- | --- |
+| `tpcanalysis-main/src/*.cpp` | `src/upstream/*.cpp` |
+| `tpcanalysis-main/include/*.hpp` | `include/upstream/*.hpp` |
+| `tpcanalysis-main/dict/include/*.h` | `include/upstream/*.h` |
+| `tpcanalysis-main/dict/src/*.cpp` | `src/upstream/*.cpp` |
+| `tpcanalysis-main/utils/*.dat` | `utils/*.dat` |
+| `tpcanalysis-main/runmacro_mini.cpp` | 削除 (なくなった) |
+| `tpcanalysis-main/run_mini.cpp` (マクロ) | `tools/run_mini_main.cpp` (standalone 実行ファイル) |
+| `tpcanalysis-main/dict/CMakeLists.txt` | トップの `CMakeLists.txt` に統合 (ROOT_GENERATE_DICTIONARY) |
 
 ---
 

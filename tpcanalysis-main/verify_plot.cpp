@@ -22,8 +22,7 @@
 #include "TString.h"
 #include "TStyle.h"
 
-// Tell cling / ACLiC where our headers live (no ROOT_INCLUDE_PATH needed).
-#pragma cling add_include_path("../include")
+// Header search path and libMyLib linking come from tpcanalysis-main/rootlogon.C.
 
 // Load the pre-built GET dictionary. See run_mini.cpp for build notes.
 // No extension: gSystem picks .dylib on macOS and .so on Linux.

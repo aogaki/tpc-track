@@ -227,8 +227,7 @@ root -b -q 'run_mini.cpp("../raw_run_files/CoBo_2026-04-06_0001.root")'
 
 ```bash
 # ACLiC モード (.so キャッシュで 2 回目以降 ~12 秒、初回は ~15 秒)
-root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
-    'run_mini.cpp+("../raw_run_files/CoBo_2026-04-06_0001.root")'
+root -b -q 'run_mini.cpp+O("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 
 出力: 入力 `.root` と同じディレクトリに `<ファイル名>_points.csv` が作られる。
@@ -340,7 +339,7 @@ cd tpcanalysis-main/dict && rm -rf build && cmake -B build -S . && cmake --build
 
 ### ACLiC (`+`) が `GET::GDataFrame::Class()` not found で落ちる
 
-`-e 'gSystem->AddLinkedLibs("/abs/path/to/libMyLib.so");'` を忘れている (README 参照)。もしくは dict が未ビルド。
+`tpcanalysis-main/rootlogon.C` がある場所から ROOT を起動していないか、dict が未ビルド。cwd を `tpcanalysis-main/` にして `root` すれば自動的に `-lMyLib` とインクルードパスがセットされる。
 
 ### `compare_png.py` が 10-15% の差分を出す
 

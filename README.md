@@ -242,8 +242,7 @@ For repeated runs:
 
 ```bash
 # ACLiC mode — ~15 s cold compile, ~12 s with cached .so
-root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
-    'run_mini.cpp+("../raw_run_files/CoBo_2026-04-06_0001.root")'
+root -b -q 'run_mini.cpp+O("../raw_run_files/CoBo_2026-04-06_0001.root")'
 ```
 
 Output: `<input>_points.csv` next to the input `.root`, with columns
@@ -363,8 +362,9 @@ cd tpcanalysis-main/dict && rm -rf build && cmake -B build -S . && cmake --build
 
 ### ACLiC (`+`) fails with `GET::GDataFrame::Class()` not found
 
-You forgot `-e 'gSystem->AddLinkedLibs("/abs/path/to/libMyLib.so");'`,
-or the dict library isn't built yet.
+The dict library isn't built yet, or you launched ROOT from a directory
+without `rootlogon.C`. Run from `tpcanalysis-main/` so `rootlogon.C`
+auto-wires the include path and `-lMyLib` link flag.
 
 ### `compare_png.py` reports 10–15 % diff
 

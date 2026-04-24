@@ -50,8 +50,7 @@ root -b -q 'verify_plot.cpp("<root>", 0)'
 
 ```bash
 cd tpcanalysis-main
-root -b -q -e 'gSystem->AddLinkedLibs("'$PWD'/dict/build/libMyLib.so");' \
-    'verify_plot.cpp+("<root>", 0)'
+root -b -q 'verify_plot.cpp+O("<root>", 0)'
 ```
 
 `AddLinkedLibs` を ACLiC の link 段階に渡す必要がある。2 回目以降は `.so` がキャッシュされるので `-e` 無しでも動く (引数部分のみで OK)。

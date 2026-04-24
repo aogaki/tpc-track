@@ -19,10 +19,9 @@
 #include "TString.h"
 #include "TSystem.h"
 
-// Tell cling / ACLiC where our headers live so the user doesn't have to
-// set ROOT_INCLUDE_PATH manually. Relative to the working directory
-// (tpcanalysis-main/) which is where this macro is expected to be run.
-#pragma cling add_include_path("../include")
+// Header search path and libMyLib linking are set by rootlogon.C in this
+// directory, which ROOT auto-loads on startup. If you're invoking root
+// from somewhere else, source that logon manually or set gSystem yourself.
 
 // Load the pre-built GET dictionary from tpcanalysis-main/dict/build/.
 // No extension: gSystem picks .dylib on macOS and .so on Linux.

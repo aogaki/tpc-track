@@ -36,3 +36,5 @@ Makefile
 
 # Verification output (M4) — PNGs can balloon
 verification/
+*.so
+*.dylib

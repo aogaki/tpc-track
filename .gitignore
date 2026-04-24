@@ -2,6 +2,11 @@
 *.root
 raw_run_files/
 
+# Point-cloud CSVs produced by run_mini. utils/*.csv stays tracked
+# because those are the small normalisation config files.
+*.csv
+!utils/*.csv
+
 # macOS
 .DS_Store
 

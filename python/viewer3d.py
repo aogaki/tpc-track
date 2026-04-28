@@ -171,11 +171,19 @@ def plot_event(
     return fig
 
 
+def line_length_mm(line: Line3D) -> float:
+    """Endpoint-to-endpoint distance of a fitted line in mm."""
+    a, b = line.endpoints()
+    return float(np.linalg.norm(b - a))
+
+
 def plot_all_lines(
     lines_with_eid,
     color_by: str = "event_id",
     opacity: float = 0.4,
     line_width: int = 2,
+    min_length_mm: float = 0.0,
+    max_length_mm: float = float("inf"),
     title: Optional[str] = None,
 ) -> go.Figure:
     """Render every fitted line from a batch fit in a single 3D figure.
@@ -194,11 +202,30 @@ def plot_all_lines(
         Per-line alpha. Lower it for 1000+-line plots so the inside of the
         detector stays legible.
     line_width : px
+    min_length_mm, max_length_mm : float
+        Endpoint-to-endpoint length window in mm. Lines outside this range
+        are dropped. Useful to separate short alpha tracks from long
+        cosmic-ray-like vertical fits — try `max_length_mm=30` for alphas,
+        `min_length_mm=80` for cosmics.
     """
-    pairs = list(lines_with_eid)
-    if not pairs:
+    all_pairs = list(lines_with_eid)
+    if not all_pairs:
         fig = go.Figure()
         fig.update_layout(title="no lines fit")
+        return fig
+
+    pairs = [
+        (eid, ln) for eid, ln in all_pairs
+        if min_length_mm <= line_length_mm(ln) <= max_length_mm
+    ]
+    if not pairs:
+        fig = go.Figure()
+        fig.update_layout(
+            title=(
+                f"length filter dropped all {len(all_pairs)} lines "
+                f"(window {min_length_mm:.0f}..{max_length_mm:.0f} mm)"
+            )
+        )
         return fig
 
     eids = np.array([eid for eid, _ in pairs], dtype=float)
@@ -261,8 +288,16 @@ def plot_all_lines(
         )
 
     fig = go.Figure(data=traces)
+    n_total = len(all_pairs)
+    n_kept = len(pairs)
+    default_title = (
+        f"{n_kept}/{n_total} lines (length {min_length_mm:.0f}..{max_length_mm:.0f} mm) "
+        f"over {len(set(eids.astype(int)))} events"
+        if n_kept != n_total
+        else f"{n_kept} fitted lines over {len(set(eids.astype(int)))} events"
+    )
     fig.update_layout(
-        title=title or f"{len(pairs)} fitted lines over {len(set(eids.astype(int)))} events",
+        title=title or default_title,
         scene=dict(
             xaxis_title="x [mm]",
             yaxis_title="y [mm]",

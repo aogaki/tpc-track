@@ -206,6 +206,7 @@ sliders — tune those first, then hit the **Fit all events** button.
 | `progress` / `status` | Live event counter. 142 events ≈ tens of seconds; 1000+ takes minutes. |
 | `color by` | `event_id` (Viridis over time), `inliers` (Viridis over fit quality), or `none` (single colour — differentiate by opacity). |
 | `opacity` | Per-line alpha, 0.05 – 1.0. Lower it for 1000+-line plots so the detector interior stays readable. |
+| `length [mm]` | Endpoint-to-endpoint length window. Slide the bottom up to ~80 mm to isolate cosmic-like full-cage tracks; slide the top down to ~30 mm to isolate short alpha-like tracks. Live filter — no refit needed. |
 
 Changing `color by` or `opacity` re-renders instantly **without refitting**
 — the pair list is cached. Change any slider in Step B and press the

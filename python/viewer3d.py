@@ -177,6 +177,66 @@ def line_length_mm(line: Line3D) -> float:
     return float(np.linalg.norm(b - a))
 
 
+def plot_length_histogram(
+    lines_with_eid,
+    bins: int = 50,
+    min_length_mm: float = 0.0,
+    max_length_mm: float = float("inf"),
+    title: Optional[str] = None,
+) -> go.Figure:
+    """Histogram of fitted-line lengths, with the current filter window shaded.
+
+    Two-population events (alpha + cosmic) typically show up as a short-track
+    cluster (a few mm) and a long-track cluster (~drift cage diameter) with
+    a clear gap in the middle. The histogram + the live filter window make
+    that split easy to read off.
+    """
+    pairs = list(lines_with_eid)
+    if not pairs:
+        fig = go.Figure()
+        fig.update_layout(title="no lines to histogram")
+        return fig
+
+    lengths = np.array([line_length_mm(ln) for _, ln in pairs])
+    upper = float(lengths.max()) if lengths.size else 1.0
+    n_kept = int(np.sum((lengths >= min_length_mm) & (lengths <= max_length_mm)))
+
+    fig = go.Figure(
+        data=[
+            go.Histogram(
+                x=lengths,
+                nbinsx=bins,
+                marker=dict(color="#4363d8"),
+                name="all",
+            )
+        ]
+    )
+
+    # Shade the kept window with a translucent overlay.
+    if np.isfinite(max_length_mm):
+        x_max = max(upper * 1.05, max_length_mm * 1.05)
+    else:
+        x_max = upper * 1.05
+    fig.add_vrect(
+        x0=min_length_mm,
+        x1=min(max_length_mm, x_max) if np.isfinite(max_length_mm) else x_max,
+        fillcolor="#3cb44b", opacity=0.15, line_width=0,
+        annotation_text=f"kept: {n_kept}/{len(pairs)}",
+        annotation_position="top left",
+    )
+
+    fig.update_layout(
+        title=title or f"line-length histogram ({len(pairs)} lines)",
+        xaxis_title="length [mm]",
+        yaxis_title="count",
+        bargap=0.05,
+        width=900,
+        height=300,
+    )
+    fig.update_xaxes(range=[0, x_max])
+    return fig
+
+
 def plot_all_lines(
     lines_with_eid,
     color_by: str = "event_id",

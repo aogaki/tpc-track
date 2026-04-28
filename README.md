@@ -208,6 +208,11 @@ sliders — tune those first, then hit the **Fit all events** button.
 | `opacity` | Per-line alpha, 0.05 – 1.0. Lower it for 1000+-line plots so the detector interior stays readable. |
 | `length [mm]` | Endpoint-to-endpoint length window. Slide the bottom up to ~80 mm to isolate cosmic-like full-cage tracks; slide the top down to ~30 mm to isolate short alpha-like tracks. Live filter — no refit needed. |
 
+A **line-length histogram** sits between the controls and the 3D plot.
+Two-population data (alphas + cosmics) shows up as a short-track bump
+near the origin and a long-track bump near the drift-cage span, with a
+gap in between. The kept range from the slider is shaded green.
+
 Changing `color by` or `opacity` re-renders instantly **without refitting**
 — the pair list is cached. Change any slider in Step B and press the
 button again to refit.
